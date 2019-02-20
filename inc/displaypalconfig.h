@@ -18,9 +18,13 @@
 /*
  * Select which oscillator should source the RTC clock.
  */
-#undef  PAL_RTCC_CLOCK_LFXO
-#define  PAL_RTCC_CLOCK_LFRCO
-#undef  PAL_RTCC_CLOCK_ULFRCO
+//#undef  PAL_RTCC_CLOCK_LFXO
+//#define  PAL_RTCC_CLOCK_LFRCO
+//#undef  PAL_RTCC_CLOCK_ULFRCO
+
+// Use RTC clock for auto-toggle
+#define PAL_CLOCK_RTC
+#define PAL_RTC_CLOCK_LFRCO
 
 /*
  * PAL SPI / USART configuration for the SLSTK3701A.

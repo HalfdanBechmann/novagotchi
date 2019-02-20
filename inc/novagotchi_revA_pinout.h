@@ -45,6 +45,6 @@
 #define PINOUT_LFXTAL_P_PORT (gpioPortB)
 #define PINOUT_LFXTAL_P_PIN          (7)
 #define PINOUT_LFXTAL_N_PORT (gpioPortB)
-#define PINOUT_LFXTAL_INC_NOVAGOTCHI_RAVA_PINOUT_H_  (8)
+#define PINOUT_LFXTAL_N_PIN          (8)
 
 #endif /* INC_NOVAGOTCHI_REVA_PINOUT_H_ */

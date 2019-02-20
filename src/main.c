@@ -4,6 +4,8 @@
  ******************************************************************************/
 
 // Memcopy
+#include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 
 // EMlib
@@ -13,6 +15,7 @@
 #include "em_emu.h"
 #include "em_gpio.h"
 #include "em_letimer.h"
+//#include "em_rtcc.h"
 
 // Configuration
 #include "novagotchi_revA_pinout.h"
@@ -112,6 +115,34 @@ static void GpioSetup(void)
   NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
   NVIC_EnableIRQ(GPIO_ODD_IRQn);
 }
+/*
+void RTCC_setup(void) {
+
+	// Set up rtcc clock
+	CMU_ClockSelectSet(cmuClock_LFA,cmuSelect_LFRCO);
+	CMU_ClockEnable(cmuClock_RTCC, true);
+	CMU_ClockEnable(cmuClock_CORELE, true);
+
+	const RTCC_Init_TypeDef rtcc_init =
+			{
+			true,                // Start counting when initialization is done.
+			false,               // Disable RTCC during debug halt.
+			false,               // Disable pre-counter wrap on ch. 0 CCV value.
+			false,               // Disable counter wrap on ch. 1 CCV value.
+			rtccCntPresc_32768,  // 1 tick per second.
+			rtccCntTickPresc,    // Counter increments according to prescaler value. fixme: ??
+			false,               // No RTCC oscillator failure detection.
+			rtccCntModeCalendar, // Calendar mode.
+		    false                // No leap year correction.
+	};
+	RTCC_Init(&rtcc_init);
+
+	RTCC->IEN = RTCC_IEN_MINTICK; // Wake up every minute
+	NVIC_EnableIRQ(LETIMER0_IRQn);
+
+	RTCC_Enable(true);
+}
+*/
 
 /***************************************************************************//**
  * @brief Unified GPIO Interrupt handler (pushbuttons)
@@ -145,6 +176,12 @@ void GPIO_Unified_IRQ(void)
   }
 }
 
+/*
+void RTCC_IRQHandler(void)
+{
+	//
+}
+*/
 void LETIMER0_IRQHandler(void)
 {
 	uint32_t interruptMask = LETIMER_IntGet(LETIMER0);
@@ -265,6 +302,8 @@ static void setupLetimer(void)
 
 	/* Initialize the RTC */
 	LETIMER_Enable(LETIMER0, true);
+
+
 }
 
 
@@ -310,7 +349,7 @@ int main(void)
   }
 
   while (1) {
-	if (state_changed()) { // Only redraw if something changed
+	if (state_changed()) {
       drawScreen();
 	}
     EMU_EnterEM2(true);

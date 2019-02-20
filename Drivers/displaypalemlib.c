@@ -23,7 +23,6 @@
 #include "em_cmu.h"
 #include "em_gpio.h"
 #include "em_usart.h"
-#include "bsp.h"
 #include "udelay.h"
 
 /* DISPLAY driver inclustions */
@@ -555,7 +554,7 @@ static void rtcSetup(unsigned int frequency)
   RTC_Init(&rtcInit);
 
   /* Interrupt at given frequency. */
-  RTC_CompareSet(0, ((CMU_ClockFreqGet(cmuClock_RTC) / frequency) - 1) & _RTC_COMP0_MASK);
+  RTC_CompareSet(0, ((CMU_ClockFreqGet(cmuClock_RTC) / frequency) - 1) & _RTC_COMP_COMP_MASK);
 
 #ifndef INCLUDE_PAL_GPIO_PIN_AUTO_TOGGLE_HW_ONLY
   /* Enable interrupt */
