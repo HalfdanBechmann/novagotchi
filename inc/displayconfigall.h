@@ -28,7 +28,7 @@
 /* Then include the kit specific display configuration files which also includes
    the application specific configuration file and further selects which modules
    modules to include below. */
-
+#include "pinout.h"
 #include "displaypalconfig.h"
 #include "displayconfig.h"
 #endif

@@ -6,7 +6,6 @@
 #ifndef __SILICON_LABS_DISPLAYLPM013M126ACONFIG_H__
 #define __SILICON_LABS_DISPLAYLPM013M126ACONFIG_H__
 
-#include <novagotchi_revA_pinout.h>
 #include "displayconfigapp.h"
 #include "em_gpio.h"
 /* Display device name. */

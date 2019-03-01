@@ -261,7 +261,7 @@ EMSTATUS DMD_writeData(uint16_t x, uint16_t y, const uint8_t data[],
 
         switch (displayDevice.colourMode) {
         #if defined(DISPLAY_COLOUR_MODE_IS_RGB_3BIT)
-          uint32_t* dataWord;
+          uint32_t dataWord;
           int       pixelByte;
 
           case DISPLAY_COLOUR_MODE_RGB_3BIT:
@@ -281,8 +281,9 @@ EMSTATUS DMD_writeData(uint16_t x, uint16_t y, const uint8_t data[],
               for (; pixelBit < 8; pixelBit += RGB_3BIT_BITS_PER_PIXEL) {
                 if (rowPixels) {
                   /* Read out data for the pixel */
-                  dataWord = (uint32_t *) &data[pixelSrcByte];
-                  pixelData = (uint8_t) (*dataWord >> pixelSrcBit) & 0x7;
+                  dataWord = data[pixelSrcByte] | (data[pixelSrcByte+1]<<8);
+
+                  pixelData = (uint8_t) (dataWord >> pixelSrcBit) & 0x7;
                   pixelSrcBit += RGB_3BIT_BITS_PER_PIXEL;
 
                   /* Write pixeldata to the byte to be written to the buffer */

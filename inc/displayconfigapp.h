@@ -16,6 +16,8 @@
 #ifndef __DISPLAYCONFIGAPP_H__
 #define __DISPLAYCONFIGAPP_H__
 
+#include "pinout.h"
+
 /* Include pixel matrix allocation support. */
 #define PIXEL_MATRIX_ALLOC_SUPPORT
 

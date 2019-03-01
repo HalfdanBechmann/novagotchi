@@ -18,13 +18,13 @@
 /*
  * Select which oscillator should source the RTC clock.
  */
-//#undef  PAL_RTCC_CLOCK_LFXO
-//#define  PAL_RTCC_CLOCK_LFRCO
-//#undef  PAL_RTCC_CLOCK_ULFRCO
+#define PAL_RTCC_CLOCK_LFXO
+#undef  PAL_RTCC_CLOCK_LFRCO
+#undef  PAL_RTCC_CLOCK_ULFRCO
 
 // Use RTC clock for auto-toggle
-#define PAL_CLOCK_RTC
-#define PAL_RTC_CLOCK_LFRCO
+//#define PAL_CLOCK_RTC
+//#define PAL_RTC_CLOCK_LFRCO
 
 /*
  * PAL SPI / USART configuration for the SLSTK3701A.
@@ -39,7 +39,7 @@
 /*
  * Specify the SPI baud rate:
  */
-#define PAL_SPI_BAUDRATE       (3500000) /* Max baudrate on EFM32GG. */
+#define PAL_SPI_BAUDRATE       (3500000)
 //#define PAL_SPI_BAUDRATE       (1000000)
 
 /*
@@ -49,6 +49,6 @@
  * INCLUDE_PAL_GPIO_PIN_AUTO_TOGGLE_HW_ONLY the toggling of EXTCOMIN will
  * be handled by hardware, without software intervention, which saves power.
  */
-#define INCLUDE_PAL_GPIO_PIN_AUTO_TOGGLE_HW_ONLY
+//#define INCLUDE_PAL_GPIO_PIN_AUTO_TOGGLE_HW_ONLY
 
 #endif /* __SILICON_LABS_DISPLAYPALCONFIG_H__ */

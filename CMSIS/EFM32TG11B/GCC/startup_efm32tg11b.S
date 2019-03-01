@@ -1,5 +1,5 @@
-/* @file startup_efm32gg11b.S
- * @brief startup file for Silicon Labs EFM32GG11B devices.
+/* @file startup_efm32tg11b.S
+ * @brief startup file for Silicon Labs EFM32TG11B devices.
  *        For use with GCC for ARM Embedded Processors
  * @version 5.5.0
  * Date:    12 June 2014
@@ -33,7 +33,8 @@
    ---------------------------------------------------------------------------*/
 
     .syntax     unified
-    .arch       armv7-m
+    .arch       armv6-m
+
     .section    .stack
     .align      3
 #ifdef __STACK_SIZE
@@ -74,15 +75,15 @@ __Vectors:
     .long       Reset_Handler              /* Reset Handler */
     .long       NMI_Handler                /* NMI Handler */
     .long       HardFault_Handler          /* Hard Fault Handler */
-    .long       MemManage_Handler          /* MPU Fault Handler */
-    .long       BusFault_Handler           /* Bus Fault Handler */
-    .long       UsageFault_Handler         /* Usage Fault Handler */
+    .long       Default_Handler            /* Reserved */
+    .long       Default_Handler            /* Reserved */
+    .long       Default_Handler            /* Reserved */
     .long       Default_Handler            /* Reserved */
     .long       Default_Handler            /* Reserved */
     .long       Default_Handler            /* Reserved */
     .long       Default_Handler            /* Reserved */
     .long       SVC_Handler                /* SVCall Handler */
-    .long       DebugMon_Handler           /* Debug Monitor Handler */
+    .long       Default_Handler            /* Reserved */
     .long       Default_Handler            /* Reserved */
     .long       PendSV_Handler             /* PendSV Handler */
     .long       SysTick_Handler            /* SysTick Handler */
@@ -94,68 +95,32 @@ __Vectors:
     .long       GPIO_EVEN_IRQHandler       /* 3 - GPIO_EVEN */
     .long       SMU_IRQHandler             /* 4 - SMU */
     .long       TIMER0_IRQHandler          /* 5 - TIMER0 */
-    .long       USART0_RX_IRQHandler       /* 6 - USART0_RX */
-    .long       USART0_TX_IRQHandler       /* 7 - USART0_TX */
-    .long       ACMP0_IRQHandler           /* 8 - ACMP0 */
-    .long       ADC0_IRQHandler            /* 9 - ADC0 */
-    .long       IDAC0_IRQHandler           /* 10 - IDAC0 */
-    .long       I2C0_IRQHandler            /* 11 - I2C0 */
-    .long       I2C1_IRQHandler            /* 12 - I2C1 */
-    .long       GPIO_ODD_IRQHandler        /* 13 - GPIO_ODD */
-    .long       TIMER1_IRQHandler          /* 14 - TIMER1 */
-    .long       TIMER2_IRQHandler          /* 15 - TIMER2 */
-    .long       TIMER3_IRQHandler          /* 16 - TIMER3 */
-    .long       USART1_RX_IRQHandler       /* 17 - USART1_RX */
-    .long       USART1_TX_IRQHandler       /* 18 - USART1_TX */
-    .long       USART2_RX_IRQHandler       /* 19 - USART2_RX */
-    .long       USART2_TX_IRQHandler       /* 20 - USART2_TX */
-    .long       UART0_RX_IRQHandler        /* 21 - UART0_RX */
-    .long       UART0_TX_IRQHandler        /* 22 - UART0_TX */
-    .long       UART1_RX_IRQHandler        /* 23 - UART1_RX */
-    .long       UART1_TX_IRQHandler        /* 24 - UART1_TX */
-    .long       LEUART0_IRQHandler         /* 25 - LEUART0 */
-    .long       LEUART1_IRQHandler         /* 26 - LEUART1 */
-    .long       LETIMER0_IRQHandler        /* 27 - LETIMER0 */
-    .long       PCNT0_IRQHandler           /* 28 - PCNT0 */
-    .long       PCNT1_IRQHandler           /* 29 - PCNT1 */
-    .long       PCNT2_IRQHandler           /* 30 - PCNT2 */
-    .long       RTCC_IRQHandler            /* 31 - RTCC */
-    .long       CMU_IRQHandler             /* 32 - CMU */
-    .long       MSC_IRQHandler             /* 33 - MSC */
-    .long       CRYPTO0_IRQHandler         /* 34 - CRYPTO0 */
-    .long       CRYOTIMER_IRQHandler       /* 35 - CRYOTIMER */
-    .long       FPUEH_IRQHandler           /* 36 - FPUEH */
-    .long       USART3_RX_IRQHandler       /* 37 - USART3_RX */
-    .long       USART3_TX_IRQHandler       /* 38 - USART3_TX */
-    .long       USART4_RX_IRQHandler       /* 39 - USART4_RX */
-    .long       USART4_TX_IRQHandler       /* 40 - USART4_TX */
-    .long       WTIMER0_IRQHandler         /* 41 - WTIMER0 */
-    .long       WTIMER1_IRQHandler         /* 42 - WTIMER1 */
-    .long       WTIMER2_IRQHandler         /* 43 - WTIMER2 */
-    .long       WTIMER3_IRQHandler         /* 44 - WTIMER3 */
-    .long       I2C2_IRQHandler            /* 45 - I2C2 */
-    .long       VDAC0_IRQHandler           /* 46 - VDAC0 */
-    .long       TIMER4_IRQHandler          /* 47 - TIMER4 */
-    .long       TIMER5_IRQHandler          /* 48 - TIMER5 */
-    .long       TIMER6_IRQHandler          /* 49 - TIMER6 */
-    .long       USART5_RX_IRQHandler       /* 50 - USART5_RX */
-    .long       USART5_TX_IRQHandler       /* 51 - USART5_TX */
-    .long       CSEN_IRQHandler            /* 52 - CSEN */
-    .long       LESENSE_IRQHandler         /* 53 - LESENSE */
-    .long       EBI_IRQHandler             /* 54 - EBI */
-    .long       ACMP2_IRQHandler           /* 55 - ACMP2 */
-    .long       ADC1_IRQHandler            /* 56 - ADC1 */
-    .long       LCD_IRQHandler             /* 57 - LCD */
-    .long       SDIO_IRQHandler            /* 58 - SDIO */
-    .long       ETH_IRQHandler             /* 59 - ETH */
-    .long       CAN0_IRQHandler            /* 60 - CAN0 */
-    .long       CAN1_IRQHandler            /* 61 - CAN1 */
-    .long       USB_IRQHandler             /* 62 - USB */
-    .long       RTC_IRQHandler             /* 63 - RTC */
-    .long       WDOG1_IRQHandler           /* 64 - WDOG1 */
-    .long       LETIMER1_IRQHandler        /* 65 - LETIMER1 */
-    .long       TRNG0_IRQHandler           /* 66 - TRNG0 */
-    .long       QSPI0_IRQHandler           /* 67 - QSPI0 */
+    .long       USART0_IRQHandler          /* 6 - USART0 */
+    .long       ACMP0_IRQHandler           /* 7 - ACMP0 */
+    .long       ADC0_IRQHandler            /* 8 - ADC0 */
+    .long       I2C0_IRQHandler            /* 9 - I2C0 */
+    .long       I2C1_IRQHandler            /* 10 - I2C1 */
+    .long       GPIO_ODD_IRQHandler        /* 11 - GPIO_ODD */
+    .long       TIMER1_IRQHandler          /* 12 - TIMER1 */
+    .long       USART1_IRQHandler          /* 13 - USART1 */
+    .long       USART2_IRQHandler          /* 14 - USART2 */
+    .long       UART0_IRQHandler           /* 15 - UART0 */
+    .long       LEUART0_IRQHandler         /* 16 - LEUART0 */
+    .long       LETIMER0_IRQHandler        /* 17 - LETIMER0 */
+    .long       PCNT0_IRQHandler           /* 18 - PCNT0 */
+    .long       RTCC_IRQHandler            /* 19 - RTCC */
+    .long       CMU_IRQHandler             /* 20 - CMU */
+    .long       MSC_IRQHandler             /* 21 - MSC */
+    .long       CRYPTO0_IRQHandler         /* 22 - CRYPTO0 */
+    .long       CRYOTIMER_IRQHandler       /* 23 - CRYOTIMER */
+    .long       USART3_IRQHandler          /* 24 - USART3 */
+    .long       WTIMER0_IRQHandler         /* 25 - WTIMER0 */
+    .long       WTIMER1_IRQHandler         /* 26 - WTIMER1 */
+    .long       VDAC0_IRQHandler           /* 27 - VDAC0 */
+    .long       CSEN_IRQHandler            /* 28 - CSEN */
+    .long       LESENSE_IRQHandler         /* 29 - LESENSE */
+    .long       LCD_IRQHandler             /* 30 - LCD */
+    .long       CAN0_IRQHandler            /* 31 - CAN0 */
 
 
     .size       __Vectors, . - __Vectors
@@ -201,11 +166,12 @@ Reset_Handler:
 
 .L_loop0_0:
     subs    r3, #4
-    ittt    ge
-    ldrge   r0, [r1, r3]
-    strge   r0, [r2, r3]
-    bge     .L_loop0_0
+    blt     .L_loop0_0_done
+    ldr     r0, [r1, r3]
+    str     r0, [r2, r3]
+    b       .L_loop0_0
 
+.L_loop0_0_done:
     adds    r4, #12
     b       .L_loop0
 
@@ -224,12 +190,16 @@ Reset_Handler:
     ldr     r2, =__data_start__
     ldr     r3, =__data_end__
 
+    subs    r3, r2
+    ble     .L_loop1_done
+
 .L_loop1:
-    cmp     r2, r3
-    ittt    lt
-    ldrlt   r0, [r1], #4
-    strlt   r0, [r2], #4
-    blt     .L_loop1
+    subs    r3, #4
+    ldr     r0, [r1,r3]
+    str     r0, [r2,r3]
+    bgt     .L_loop1
+
+.L_loop1_done:
 #endif /*__STARTUP_COPY_MULTIPLE */
 
 /*  This part of work usually is done in C library startup code. Otherwise,
@@ -262,9 +232,11 @@ Reset_Handler:
 
 .L_loop2_0:
     subs    r2, #4
-    itt     ge
-    strge   r0, [r1, r2]
-    bge     .L_loop2_0
+    blt     .L_loop2_0_done
+    str     r0, [r1, r2]
+    b       .L_loop2_0
+.L_loop2_0_done:
+
     adds    r3, #8
     b       .L_loop2
 .L_loop2_done:
@@ -281,11 +253,14 @@ Reset_Handler:
     ldr     r2, =__bss_end__
 
     movs    r0, 0
+    subs    r2, r1
+    ble     .L_loop3_done
+
 .L_loop3:
-    cmp     r1, r2
-    itt     lt
-    strlt   r0, [r1], #4
-    blt     .L_loop3
+    subs    r2, #4
+    str     r0, [r1, r2]
+    bgt     .L_loop3
+.L_loop3_done:
 #endif /* __STARTUP_CLEAR_BSS_MULTIPLE || __STARTUP_CLEAR_BSS */
 
 #ifndef __START
@@ -314,11 +289,7 @@ Default_Handler:
 
     def_irq_handler     NMI_Handler
     def_irq_handler     HardFault_Handler
-    def_irq_handler     MemManage_Handler
-    def_irq_handler     BusFault_Handler
-    def_irq_handler     UsageFault_Handler
     def_irq_handler     SVC_Handler
-    def_irq_handler     DebugMon_Handler
     def_irq_handler     PendSV_Handler
     def_irq_handler     SysTick_Handler
 
@@ -329,67 +300,31 @@ Default_Handler:
     def_irq_handler     GPIO_EVEN_IRQHandler
     def_irq_handler     SMU_IRQHandler
     def_irq_handler     TIMER0_IRQHandler
-    def_irq_handler     USART0_RX_IRQHandler
-    def_irq_handler     USART0_TX_IRQHandler
+    def_irq_handler     USART0_IRQHandler
     def_irq_handler     ACMP0_IRQHandler
     def_irq_handler     ADC0_IRQHandler
-    def_irq_handler     IDAC0_IRQHandler
     def_irq_handler     I2C0_IRQHandler
     def_irq_handler     I2C1_IRQHandler
     def_irq_handler     GPIO_ODD_IRQHandler
     def_irq_handler     TIMER1_IRQHandler
-    def_irq_handler     TIMER2_IRQHandler
-    def_irq_handler     TIMER3_IRQHandler
-    def_irq_handler     USART1_RX_IRQHandler
-    def_irq_handler     USART1_TX_IRQHandler
-    def_irq_handler     USART2_RX_IRQHandler
-    def_irq_handler     USART2_TX_IRQHandler
-    def_irq_handler     UART0_RX_IRQHandler
-    def_irq_handler     UART0_TX_IRQHandler
-    def_irq_handler     UART1_RX_IRQHandler
-    def_irq_handler     UART1_TX_IRQHandler
+    def_irq_handler     USART1_IRQHandler
+    def_irq_handler     USART2_IRQHandler
+    def_irq_handler     UART0_IRQHandler
     def_irq_handler     LEUART0_IRQHandler
-    def_irq_handler     LEUART1_IRQHandler
     def_irq_handler     LETIMER0_IRQHandler
     def_irq_handler     PCNT0_IRQHandler
-    def_irq_handler     PCNT1_IRQHandler
-    def_irq_handler     PCNT2_IRQHandler
     def_irq_handler     RTCC_IRQHandler
     def_irq_handler     CMU_IRQHandler
     def_irq_handler     MSC_IRQHandler
     def_irq_handler     CRYPTO0_IRQHandler
     def_irq_handler     CRYOTIMER_IRQHandler
-    def_irq_handler     FPUEH_IRQHandler
-    def_irq_handler     USART3_RX_IRQHandler
-    def_irq_handler     USART3_TX_IRQHandler
-    def_irq_handler     USART4_RX_IRQHandler
-    def_irq_handler     USART4_TX_IRQHandler
+    def_irq_handler     USART3_IRQHandler
     def_irq_handler     WTIMER0_IRQHandler
     def_irq_handler     WTIMER1_IRQHandler
-    def_irq_handler     WTIMER2_IRQHandler
-    def_irq_handler     WTIMER3_IRQHandler
-    def_irq_handler     I2C2_IRQHandler
     def_irq_handler     VDAC0_IRQHandler
-    def_irq_handler     TIMER4_IRQHandler
-    def_irq_handler     TIMER5_IRQHandler
-    def_irq_handler     TIMER6_IRQHandler
-    def_irq_handler     USART5_RX_IRQHandler
-    def_irq_handler     USART5_TX_IRQHandler
     def_irq_handler     CSEN_IRQHandler
     def_irq_handler     LESENSE_IRQHandler
-    def_irq_handler     EBI_IRQHandler
-    def_irq_handler     ACMP2_IRQHandler
-    def_irq_handler     ADC1_IRQHandler
     def_irq_handler     LCD_IRQHandler
-    def_irq_handler     SDIO_IRQHandler
-    def_irq_handler     ETH_IRQHandler
     def_irq_handler     CAN0_IRQHandler
-    def_irq_handler     CAN1_IRQHandler
-    def_irq_handler     USB_IRQHandler
-    def_irq_handler     RTC_IRQHandler
-    def_irq_handler     WDOG1_IRQHandler
-    def_irq_handler     LETIMER1_IRQHandler
-    def_irq_handler     TRNG0_IRQHandler
-    def_irq_handler     QSPI0_IRQHandler
 
     .end

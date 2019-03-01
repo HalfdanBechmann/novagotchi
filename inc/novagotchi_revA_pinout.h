@@ -4,7 +4,6 @@
  *  Created on: Feb 19, 2019
  *      Author: habechma
  */
-
 #ifndef INC_NOVAGOTCHI_REVA_PINOUT_H_
 #define INC_NOVAGOTCHI_REVA_PINOUT_H_
 

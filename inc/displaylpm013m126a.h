@@ -6,7 +6,6 @@
 #ifndef _DISPLAY_LPM013M126A_H_
 #define _DISPLAY_LPM013M126A_H_
 
-#include <novagotchi_revA_pinout.h>
 #include "emstatus.h"
 
 /** @cond DO_NOT_INCLUDE_WITH_DOXYGEN */

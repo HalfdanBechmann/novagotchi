@@ -18,7 +18,7 @@
 //#include "em_rtcc.h"
 
 // Configuration
-#include "novagotchi_revA_pinout.h"
+#include "pinout.h"
 #include "display.h"
 
 // Display Drivers
@@ -119,11 +119,11 @@ static void GpioSetup(void)
 void RTCC_setup(void) {
 
 	// Set up rtcc clock
-	CMU_ClockSelectSet(cmuClock_LFA,cmuSelect_LFRCO);
+	CMU_ClockSelectSet(cmuClock_LFA,cmuSelect_LFXO);
 	CMU_ClockEnable(cmuClock_RTCC, true);
 	CMU_ClockEnable(cmuClock_CORELE, true);
 
-	const RTCC_Init_TypeDef rtcc_init =
+	const RTCC_Init_TypeDef *rtcc_init =
 			{
 			true,                // Start counting when initialization is done.
 			false,               // Disable RTCC during debug halt.
@@ -138,7 +138,7 @@ void RTCC_setup(void) {
 	RTCC_Init(&rtcc_init);
 
 	RTCC->IEN = RTCC_IEN_MINTICK; // Wake up every minute
-	NVIC_EnableIRQ(LETIMER0_IRQn);
+	NVIC_EnableIRQ(RTCC_IRQn);
 
 	RTCC_Enable(true);
 }
@@ -152,6 +152,7 @@ void RTCC_setup(void) {
  ******************************************************************************/
 void GPIO_Unified_IRQ(void)
 {
+
   // Get and clear all pending GPIO interrupts
   uint32_t interruptMask = GPIO_IntGet();
   GPIO_IntClear(interruptMask);
@@ -175,11 +176,11 @@ void GPIO_Unified_IRQ(void)
 	pos--;
   }
 }
-
 /*
 void RTCC_IRQHandler(void)
 {
-	//
+	uint32_t interruptMask = RTCC_IntGet();
+	RTCC_IntClear(interruptMask);
 }
 */
 void LETIMER0_IRQHandler(void)
@@ -302,8 +303,6 @@ static void setupLetimer(void)
 
 	/* Initialize the RTC */
 	LETIMER_Enable(LETIMER0, true);
-
-
 }
 
 
@@ -330,6 +329,10 @@ int main(void)
   CHIP_Init();
 
   setupLetimer();
+
+  // LFXO setup
+  const CMU_LFXOInit_TypeDef *lfxo_init = CMU_LFXOINIT_DEFAULT;
+  CMU_LFXOInit(lfxo_init);
 
   // Setup GPIO for pushbuttons.
   GpioSetup();

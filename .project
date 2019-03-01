@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>novagotchi</name>
+	<name>Novagotchi</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -17,15 +17,4 @@
 		<nature>com.silabs.ss.framework.ide.project.sls.core.SLSProjectNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 	</natures>
-	<filteredResources>
-		<filter>
-			<id>0</id>
-			<name></name>
-			<type>10</type>
-			<matcher>
-				<id>org.eclipse.ui.ide.multiFilter</id>
-				<arguments>1.0-name-matches-true-false-hardware/kit/SLSTK3701A_EFMGG11/config</arguments>
-			</matcher>
-		</filter>
-	</filteredResources>
 </projectDescription>

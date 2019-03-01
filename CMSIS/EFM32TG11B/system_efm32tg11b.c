@@ -1,6 +1,6 @@
 /***************************************************************************//**
- * @file system_efm32gg11b.c
- * @brief CMSIS Cortex-M4 System Layer for EFM32 devices.
+ * @file system_efm32tg11b.c
+ * @brief CMSIS Cortex-M System Layer for EFM32 devices.
  * @version 5.5.0
  ******************************************************************************
  * # License
@@ -56,12 +56,12 @@
 
 #ifndef EFM32_HFRCO_MAX_FREQ
 /** Maximum HFRCO frequency */
-#define EFM32_HFRCO_MAX_FREQ            (72000000UL)
+#define EFM32_HFRCO_MAX_FREQ            (48000000UL)
 #endif
 
 #ifndef EFM32_HFXO_FREQ
 /** HFXO frequency */
-#define EFM32_HFXO_FREQ                 (50000000UL)
+#define EFM32_HFXO_FREQ                 (48000000UL)
 #endif
 
 #ifndef EFM32_HFRCO_STARTUP_FREQ
@@ -79,7 +79,7 @@ static uint32_t SystemHFXOClock = EFM32_HFXO_FREQ;
 
 #ifndef EFM32_LFXO_FREQ
 /** LFXO frequency */
-#define EFM32_LFXO_FREQ (EFM32_LFRCO_FREQ)
+#define EFM32_LFXO_FREQ                 (EFM32_LFRCO_FREQ)
 #endif
 /* Do not define variable if LF crystal oscillator not present */
 #if (EFM32_LFXO_FREQ > 0UL)
@@ -284,11 +284,6 @@ void SystemHFXOClockSet(uint32_t freq)
  *****************************************************************************/
 void SystemInit(void)
 {
-#if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
-  /* Set floating point coprosessor access mode. */
-  SCB->CPACR |= ((3UL << 10 * 2)                      /* set CP10 Full Access */
-                 | (3UL << 11 * 2));                  /* set CP11 Full Access */
-#endif
 }
 
 /**************************************************************************//**
