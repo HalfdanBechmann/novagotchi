@@ -15,6 +15,8 @@
 #include "em_emu.h"
 #include "em_gpio.h"
 #include "em_letimer.h"
+#include "em_prs.h"
+#include "em_cryotimer.h"
 //#include "em_rtcc.h"
 
 // Configuration
@@ -42,10 +44,10 @@
 
 
 #define HEART0_VAL              2000
-#define HEART1_VAL              500
-#define HEART2_VAL              300
-#define HEART3_VAL              100
-#define HEART4_VAL              50
+#define HEART1_VAL              1000
+#define HEART2_VAL              500
+#define HEART3_VAL              200
+#define HEART4_VAL              100
 #define HEART5_VAL              20
 
 /*
@@ -305,6 +307,25 @@ static void setupLetimer(void)
 	LETIMER_Enable(LETIMER0, true);
 }
 
+static void setupCryotimer (void)
+{
+	// Setting up cryotimer for toggling EXTCOMIN
+	const CRYOTIMER_Init_TypeDef *cryotimer_init = {
+		    false,
+			true,
+			false,
+		    cryotimerOscLFRCO,
+		    cryotimerPresc_128, // 2 Hz
+			cryotimerPeriod_128 //
+		  };
+	CRYOTIMER_Init(cryotimer_init);
+
+	PRS_SourceAsyncSignalSet(PINOUT_PRS_EXTCOM_CH,
+							PRS_CH_CTRL_SOURCESEL_CRYOTIMER,
+							PRS_CH_CTRL_SIGSEL_CRYOTIMERPERIOD);
+	PINOUT_PRS_EXTCOM_ROUTE;
+	CRYOTIMER_Enable(true);
+}
 
 int state_changed(void) {
 	if ((pos  != pos_prev) ||
@@ -329,6 +350,7 @@ int main(void)
   CHIP_Init();
 
   setupLetimer();
+  setupCryotimer();
 
   // LFXO setup
   const CMU_LFXOInit_TypeDef *lfxo_init = CMU_LFXOINIT_DEFAULT;

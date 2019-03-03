@@ -42,13 +42,6 @@
 #define PAL_SPI_BAUDRATE       (3500000)
 //#define PAL_SPI_BAUDRATE       (1000000)
 
-/*
- * On the SLSTK3701A, we can toggle some GPIO pins with hw only,
- * especially the GPIO port A pin 11 signal which is connected to the
- * polarity inversion (EXTCOMIN) pin on the Sharp Memory LCD. By defining
- * INCLUDE_PAL_GPIO_PIN_AUTO_TOGGLE_HW_ONLY the toggling of EXTCOMIN will
- * be handled by hardware, without software intervention, which saves power.
- */
-//#define INCLUDE_PAL_GPIO_PIN_AUTO_TOGGLE_HW_ONLY
+#define POLARITY_INVERSION_EXTCOMIN_MANUAL
 
 #endif /* __SILICON_LABS_DISPLAYPALCONFIG_H__ */
