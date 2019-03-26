@@ -35,33 +35,36 @@
 
 
 // Initial power-on state
-#define INIT_POS                 25
+#define INIT_POS                 10
 #define INIT_LOVE                 2
 
 // Limits
 #define MAX_LOVE				  5
 #define MAX_STR_LEN               48
 
+#define DOG_POS_X_MIN            0
+#define DOG_POS_X_MAX            15
 
+//#define TEST
+
+#ifdef TEST
+#define HEART0_VAL              1
+#define HEART1_VAL              1
+#define HEART2_VAL              1
+#define HEART3_VAL              1
+#define HEART4_VAL              1
+#define HEART5_VAL              1
+#else
 #define HEART0_VAL              2000
 #define HEART1_VAL              1000
 #define HEART2_VAL              500
 #define HEART3_VAL              200
 #define HEART4_VAL              100
 #define HEART5_VAL              20
-
-/*
-// Test values
-#define HEART0_VAL              7
-#define HEART1_VAL              6
-#define HEART2_VAL              5
-#define HEART3_VAL              4
-#define HEART4_VAL              3
-#define HEART5_VAL              2
-*/
+#endif
 
 /* Center of display */
-/*
+
 #define CENTER_X                  (glibContext.pDisplayGeometry->xSize / 2)
 #define CENTER_Y                  (glibContext.pDisplayGeometry->ySize / 2)
 
@@ -74,7 +77,10 @@
 #define GLIB_FONT_WIDTH           (glibContext.font.fontWidth \
                                    + glibContext.font.charSpacing)
 #define GLIB_FONT_HEIGHT          (glibContext.font.fontHeight)
-*/
+
+#define TIME_STR_LEN               5
+#define HEART_POS_X               (CENTER_X - (MAX_LOVE*HEART_BITMAP_WIDTH/2))
+#define CLK_POS_X                 (CENTER_X - (5*GLIB_FONT_WIDTH/2))
 
 // State variables
 static volatile uint32_t pos = INIT_POS;
@@ -82,14 +88,17 @@ static volatile uint32_t pos_prev = 0;
 static volatile uint32_t love = INIT_LOVE;
 static volatile uint32_t love_prev = INIT_LOVE;
 
+static bool str_opaque = false;
+static volatile char time_str[TIME_STR_LEN];
+static volatile uint8_t time_h;
+static volatile uint8_t time_m;
 
-// Buffer
-static volatile uint32_t love_buffer = 0;
+static volatile uint8_t jump = 0;
 
 // The GLIB context
 static GLIB_Context_t glibContext;
 
-// Forward static function declararations
+// Forward static function declarations
 static void drawScreen(void);
 
 /***************************************************************************//**
@@ -100,15 +109,15 @@ static void GpioSetup(void)
   CMU_ClockEnable(cmuClock_GPIO, true);
 
   // Configure PB0 as input and enable interrupt
-  GPIO_PinModeSet(PB0_PORT, PB0_PIN, gpioModeInputPull, 1);
+  GPIO_PinModeSet(PB0_PORT, PB0_PIN, gpioModeInputPullFilter, 1);
   GPIO_IntConfig(PB0_PORT, PB0_PIN, false, true, true);
 
   // Configure PB1 as input and enable interrupt
-  GPIO_PinModeSet(PB1_PORT, PB1_PIN, gpioModeInputPull, 1);
+  GPIO_PinModeSet(PB1_PORT, PB1_PIN, gpioModeInputPullFilter, 1);
   GPIO_IntConfig(PB1_PORT, PB1_PIN, false, true, true);
 
   // Configure PB2 as input and enable interrupt
-  GPIO_PinModeSet(PB2_PORT, PB2_PIN, gpioModeInputPull, 1);
+  GPIO_PinModeSet(PB2_PORT, PB2_PIN, gpioModeInputPullFilter, 1);
   GPIO_IntConfig(PB2_PORT, PB2_PIN, false, true, true);
 
   NVIC_ClearPendingIRQ(GPIO_EVEN_IRQn);
@@ -146,6 +155,74 @@ void RTCC_setup(void) {
 }
 */
 
+void Time_Init() {
+	 time_h = 0;
+	 time_m = 0;
+	 str_opaque = true;
+	 int init_love = love;
+	 int init_pos = pos;
+
+	 while (love < init_love + 1){ // Set clock mode until first click on middle button
+		 time_h += pos - init_pos;
+		 pos = init_pos;
+		 if (time_h > 23){
+			 time_h = 23;
+		 } else if (time_h < 0) {
+			 time_h = 0;
+		 }
+		 drawScreen();
+		 EMU_EnterEM2(true);
+	 };
+	 while (love < init_love + 2){ // Set clock mode until second click on middle button
+		 time_m += pos - init_pos;
+		 pos = init_pos;
+		 if (time_m > 59){
+			 time_m = 59;
+		 } else if (time_h < 0) {
+			 time_m = 0;
+		 }
+		 drawScreen();
+		 EMU_EnterEM2(true);
+	 };
+	 love = INIT_LOVE;
+	 str_opaque = false;
+}
+
+void Time_MinuteTick() {
+	if (time_m < 59) {
+		time_m++;
+	} else if (time_h < 23) {
+		time_m = 0;
+		time_h++;
+	} else {
+		time_m = 0;
+		time_h = 0;
+	}
+}
+
+
+
+// Health functions
+static volatile uint32_t love_buffer = 0;
+
+void addLove(){
+	love++;
+	love_buffer = 0;
+}
+
+void removeLove(){
+	if (((love == 0) && (love_buffer > HEART0_VAL)) ||
+	    ((love == 1) && (love_buffer > HEART1_VAL)) ||
+        ((love == 2) && (love_buffer > HEART2_VAL)) ||
+	    ((love == 3) && (love_buffer > HEART3_VAL)) ||
+  	    ((love == 4) && (love_buffer > HEART4_VAL)) ||
+	    ((love == 5) && (love_buffer > HEART5_VAL))) {
+		 	love--;
+			love_buffer = 0;
+		}
+}
+
+
 /***************************************************************************//**
  * @brief Unified GPIO Interrupt handler (pushbuttons)
  *        PB0 Go right
@@ -154,7 +231,6 @@ void RTCC_setup(void) {
  ******************************************************************************/
 void GPIO_Unified_IRQ(void)
 {
-
   // Get and clear all pending GPIO interrupts
   uint32_t interruptMask = GPIO_IntGet();
   GPIO_IntClear(interruptMask);
@@ -162,21 +238,23 @@ void GPIO_Unified_IRQ(void)
   // Act on interrupts
   if (interruptMask & (1 << PB0_PIN)) {
     // PB0: Go right
-	pos++;
+	if (pos < DOG_POS_X_MAX){
+	  pos++;
+	}
   }
 
   if (interruptMask & (1 << PB1_PIN)) {
     // PB1: Pet dog
-	if (love < MAX_LOVE) {
-     love++;
-	}
-	love_buffer = 0;
+	addLove();
   }
 
   if (interruptMask & (1 << PB2_PIN)) {
     // PB2: Go left
-	pos--;
+	if (pos > DOG_POS_X_MIN) {
+		pos--;
+	}
   }
+
 }
 /*
 void RTCC_IRQHandler(void)
@@ -189,18 +267,8 @@ void LETIMER0_IRQHandler(void)
 {
 	uint32_t interruptMask = LETIMER_IntGet(LETIMER0);
 	LETIMER_IntClear(LETIMER0, interruptMask);
-
-	if (((love == 0) && (love_buffer > HEART0_VAL)) ||
-		((love == 1) && (love_buffer > HEART1_VAL)) ||
-        ((love == 2) && (love_buffer > HEART2_VAL)) ||
-		((love == 3) && (love_buffer > HEART3_VAL)) ||
-		((love == 4) && (love_buffer > HEART4_VAL)) ||
-		((love == 5) && (love_buffer > HEART5_VAL))) {
-			love--;
-			love_buffer = 0;
-	} else {
-		love_buffer++;
-	}
+	love_buffer++;
+    Time_MinuteTick();
 }
 
 /***************************************************************************//**
@@ -236,12 +304,14 @@ static void drawScreen(void)
       memcpy(fullScreenBitmap, gardenBitmap, sizeof(gardenBitmap)/sizeof(uint8_t));
 
       int y_fullscreen = 120*66;
+      y_fullscreen -= (SCREEN_WIDTH*3/8)*jump;
+
       int y_dog = 0;
 
       if (love >= 0) {
     	for (int i_dog = 0; i_dog < DOG_BITMAP_HEIGHT; i_dog++){
     	  for (int j = 0; j < DOG_BITMAP_WIDTH*3/8; j++){
-    		  if (dogBitmap[y_dog] < TRANSPARENT_LIM) {
+    		  if (dogBitmap[y_dog] < TRANSPARENT_LIM) { // Lazy mans alpha-blending (is byte-wise, should be 3bit, causes artifacts)
     			  fullScreenBitmap[y_fullscreen+j+3*pos] = dogBitmap[y_dog];
     		  }
     		  y_dog++;
@@ -251,7 +321,7 @@ static void drawScreen(void)
       } else {
       	for (int i_dog = 0; i_dog < DOG_DEAD_BITMAP_HEIGHT; i_dog++){
       	  for (int j = 0; j < DOG_DEAD_BITMAP_WIDTH*3/8; j++){
-      		  if (dog_deadBitmap[y_dog] < TRANSPARENT_LIM) {
+      		  if (dog_deadBitmap[y_dog] < TRANSPARENT_LIM) { // Lazy mans alpha-blending  (is byte-wise, should be 3bit, causes artifacts)
       			  fullScreenBitmap[y_fullscreen+j] = dog_deadBitmap[y_dog];
       		  }
       		  y_dog++;
@@ -260,19 +330,8 @@ static void drawScreen(void)
          }
 
       }
-      for (int i = 0; i < love; i++) {
-    	  y_fullscreen = SCREEN_BYTE_WIDTH/2 + (i-MAX_LOVE/2)*HEART_BYTE_WIDTH;
-    	  int y_heart = 0;
-    	  for (int i_heart = 0; i_heart < HEART_BITMAP_HEIGHT; i_heart++){
-    		  for (int j = 0; j < HEART_BITMAP_WIDTH*3/8; j++){
-    			  fullScreenBitmap[y_fullscreen+j] = heartBitmap[y_heart];
-    			  y_heart++;
-    		  }
-    		  y_fullscreen += SCREEN_BYTE_WIDTH;
-    	  }
-      }
 
-      GLIB_clear(&glibContext);
+      // Draw background and "alpha-blended" dog
       GLIB_drawBitmap(&glibContext,
                       0,
                       0,
@@ -280,12 +339,32 @@ static void drawScreen(void)
                       GARDEN_BITMAP_HEIGHT,
 					  fullScreenBitmap);
 
+      // Draw hearts
+      for (int i = 0; i < love; i++) {
+    	  GLIB_drawBitmap(&glibContext,
+    			          HEART_POS_X + (i*HEART_BITMAP_WIDTH),
+    	                  0,
+    	                  HEART_BITMAP_WIDTH,
+    	                  HEART_BITMAP_HEIGHT,
+						  heartBitmap);
+      }
+
+      // Draw Clock
+      sprintf(time_str, "%02d:%02d", time_h, time_m);
+      GLIB_drawString(&glibContext,
+    		          time_str,
+					  TIME_STR_LEN,
+					  CLK_POS_X,
+					  20,
+					  str_opaque);
+
       DMD_updateDisplay();
 }
 
 static void setupLetimer(void)
 {
-	CMU_ClockSelectSet(cmuClock_LFA,cmuSelect_ULFRCO);
+	CMU_ClockSelectSet(cmuClock_LFA,cmuSelect_LFXO);
+	CMU_ClockDivSet(cmuClock_LETIMER0, cmuClkDiv_32768);
 	CMU_ClockEnable(cmuClock_LETIMER0, true);
 	CMU_ClockEnable(cmuClock_CORELE, true);
 
@@ -297,16 +376,16 @@ static void setupLetimer(void)
 
 	LETIMER_Init(LETIMER0, &letimerInit );
 
-	LETIMER_CompareSet(LETIMER0, 0, 0xFFFF);
+	LETIMER_CompareSet(LETIMER0, 0, 59); // Counts to 59 seconds
 
-	/* Enabling Interrupt from RTC */
-	LETIMER_IntEnable(LETIMER0, LETIMER_IF_COMP0);
+	NVIC_ClearPendingIRQ(LETIMER0_IRQn);
 	NVIC_EnableIRQ(LETIMER0_IRQn);
+	LETIMER0->IFC = ~_LETIMER_IFC_MASK;
+	LETIMER0->IEN = LETIMER_IEN_COMP0;
 
-	/* Initialize the RTC */
 	LETIMER_Enable(LETIMER0, true);
 }
-
+/*
 static void setupCryotimer (void)
 {
 	// Setting up cryotimer for toggling EXTCOMIN
@@ -326,7 +405,7 @@ static void setupCryotimer (void)
 	PINOUT_PRS_EXTCOM_ROUTE;
 	CRYOTIMER_Enable(true);
 }
-
+*/
 int state_changed(void) {
 	if ((pos  != pos_prev) ||
 	    (love != love_prev)) {
@@ -349,17 +428,16 @@ int main(void)
   /* Chip errata */
   CHIP_Init();
 
-  setupLetimer();
-  setupCryotimer();
-
   // LFXO setup
   const CMU_LFXOInit_TypeDef *lfxo_init = CMU_LFXOINIT_DEFAULT;
   CMU_LFXOInit(lfxo_init);
 
+
+  //setupCryotimer();
+
   // Setup GPIO for pushbuttons.
   GpioSetup();
-  NVIC_ClearPendingIRQ(LETIMER0_IRQn);
-  NVIC_EnableIRQ(LETIMER0_IRQn);
+
   // Initialize the DMD module for the DISPLAY device driver.
   status = DMD_init(0);
   if (DMD_OK != status) {
@@ -373,10 +451,40 @@ int main(void)
     }
   }
 
+  GLIB_Font_t number_font = GLIB_FontNumber16x20;
+  status = GLIB_setFont(&glibContext, &number_font);
+  if (GLIB_OK != status) {
+    while (1) {
+
+   }
+  }
+
+  // Set initial time
+  Time_Init();
+
+  // Start time keeping
+  setupLetimer();
+
+  glibContext.foregroundColor = Black;
+
   while (1) {
-	if (state_changed()) {
-      drawScreen();
-	}
+	//if (state_changed()) {
+    //drawScreen();
+	//}
+	// Fixme: Needs cleanup
+	int new_pos = pos;
+	pos = pos_prev;
+	jump = (time_m % 3) + 3;
+    drawScreen();
+    jump += 2;
+    pos = new_pos;
+    drawScreen();
+    jump -= 2;
+    removeLove();
+    drawScreen();
+    jump -= 3;
+    drawScreen();
+    state_changed();
     EMU_EnterEM2(true);
   }
 }
