@@ -126,34 +126,7 @@ static void GpioSetup(void)
   NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
   NVIC_EnableIRQ(GPIO_ODD_IRQn);
 }
-/*
-void RTCC_setup(void) {
 
-	// Set up rtcc clock
-	CMU_ClockSelectSet(cmuClock_LFA,cmuSelect_LFXO);
-	CMU_ClockEnable(cmuClock_RTCC, true);
-	CMU_ClockEnable(cmuClock_CORELE, true);
-
-	const RTCC_Init_TypeDef *rtcc_init =
-			{
-			true,                // Start counting when initialization is done.
-			false,               // Disable RTCC during debug halt.
-			false,               // Disable pre-counter wrap on ch. 0 CCV value.
-			false,               // Disable counter wrap on ch. 1 CCV value.
-			rtccCntPresc_32768,  // 1 tick per second.
-			rtccCntTickPresc,    // Counter increments according to prescaler value. fixme: ??
-			false,               // No RTCC oscillator failure detection.
-			rtccCntModeCalendar, // Calendar mode.
-		    false                // No leap year correction.
-	};
-	RTCC_Init(&rtcc_init);
-
-	RTCC->IEN = RTCC_IEN_MINTICK; // Wake up every minute
-	NVIC_EnableIRQ(RTCC_IRQn);
-
-	RTCC_Enable(true);
-}
-*/
 
 void Time_Init() {
 	 time_h = 0;
@@ -206,7 +179,9 @@ void Time_MinuteTick() {
 static volatile uint32_t love_buffer = 0;
 
 void addLove(){
-	love++;
+	if (love < MAX_LOVE) {
+		love++;
+	}
 	love_buffer = 0;
 }
 
@@ -385,27 +360,7 @@ static void setupLetimer(void)
 
 	LETIMER_Enable(LETIMER0, true);
 }
-/*
-static void setupCryotimer (void)
-{
-	// Setting up cryotimer for toggling EXTCOMIN
-	const CRYOTIMER_Init_TypeDef *cryotimer_init = {
-		    false,
-			true,
-			false,
-		    cryotimerOscLFRCO,
-		    cryotimerPresc_128, // 2 Hz
-			cryotimerPeriod_128 //
-		  };
-	CRYOTIMER_Init(cryotimer_init);
 
-	PRS_SourceAsyncSignalSet(PINOUT_PRS_EXTCOM_CH,
-							PRS_CH_CTRL_SOURCESEL_CRYOTIMER,
-							PRS_CH_CTRL_SIGSEL_CRYOTIMERPERIOD);
-	PINOUT_PRS_EXTCOM_ROUTE;
-	CRYOTIMER_Enable(true);
-}
-*/
 int state_changed(void) {
 	if ((pos  != pos_prev) ||
 	    (love != love_prev)) {
