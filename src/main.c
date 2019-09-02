@@ -164,11 +164,12 @@ void Time_Init() {
 void Time_MinuteTick() {
 	if (time_m < 59) {
 		time_m++;
-	} else if (time_h < 23) {
-		time_m = 0;
-		time_h++;
 	} else {
 		time_m = 0;
+	}
+	if (time_h < 23) {
+		time_h++;
+	} else {
 		time_h = 0;
 	}
 }
