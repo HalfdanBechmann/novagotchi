@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdio.h>
 
 // EMlib
 #include "em_device.h"
@@ -17,6 +18,7 @@
 #include "em_letimer.h"
 #include "em_prs.h"
 #include "em_cryotimer.h"
+#include "em_adc.h"
 //#include "em_rtcc.h"
 
 // Configuration
@@ -33,6 +35,10 @@
 #include "graphics/garden.h"
 #include "graphics/heart.h"
 
+// ADC defines
+#define microvoltsPerStep 1221 // 1322
+#define VINATT(ATT_FACTOR) ATT_FACTOR << _ADC_SINGLECTRLX_VINATT_SHIFT
+#define VREFATT(ATT_FACTOR)ATT_FACTOR << _ADC_SINGLECTRLX_VREFATT_SHIFT
 
 // Initial power-on state
 #define INIT_POS                 10
@@ -74,9 +80,15 @@
 #define MIN_X                     0
 #define MIN_Y                     0
 
+
+GLIB_Font_t bat_font;
+GLIB_Font_t clk_font;
+
 #define GLIB_FONT_WIDTH           (glibContext.font.fontWidth \
                                    + glibContext.font.charSpacing)
 #define GLIB_FONT_HEIGHT          (glibContext.font.fontHeight)
+
+#define BAT_STR_LEN                5
 
 #define TIME_STR_LEN               5
 #define HEART_POS_X               (CENTER_X - (MAX_LOVE*HEART_BITMAP_WIDTH/2))
@@ -88,8 +100,12 @@ static volatile uint32_t pos_prev = 0;
 static volatile uint32_t love = INIT_LOVE;
 static volatile uint32_t love_prev = INIT_LOVE;
 
+static char bat_str[BAT_STR_LEN+1];
+static int batteryVoltage;
+static uint8_t batteryVoltagePct;
+
 static bool str_opaque = false;
-static volatile char time_str[TIME_STR_LEN];
+static char time_str[TIME_STR_LEN+1];
 static volatile uint8_t time_h;
 static volatile uint8_t time_m;
 
@@ -129,7 +145,7 @@ static void GpioSetup(void)
 
 
 void Time_Init() {
-	 time_h = 0;
+	 time_h = 2;
 	 time_m = 0;
 	 str_opaque = true;
 	 int init_love = love;
@@ -148,12 +164,13 @@ void Time_Init() {
 	 };
 	 while (love < init_love + 2){ // Set clock mode until second click on middle button
 		 time_m += pos - init_pos;
-		 pos = init_pos;
+
 		 if (time_m > 59){
 			 time_m = 59;
 		 } else if (time_h < 0) {
 			 time_m = 0;
 		 }
+		 pos = init_pos;
 		 drawScreen();
 		 EMU_EnterEM2(true);
 	 };
@@ -166,11 +183,11 @@ void Time_MinuteTick() {
 		time_m++;
 	} else {
 		time_m = 0;
-	}
-	if (time_h < 23) {
-		time_h++;
-	} else {
-		time_h = 0;
+		if (time_h < 23) {
+			time_h++;
+		} else {
+			time_h = 0;
+		}
 	}
 }
 
@@ -198,6 +215,63 @@ void removeLove(){
 		}
 }
 
+
+// Measure battery
+void InitADCforSupplyMeasurement()
+{
+  ADC_Init_TypeDef ADC_Defaults =ADC_INIT_DEFAULT;
+
+  ADC_InitSingle_TypeDef init =ADC_INITSINGLE_DEFAULT ;
+  init.negSel = adcNegSelVSS;
+  init.posSel = adcPosSelAVDD;
+  init.reference = adcRef5V ;
+
+  //CMU_ClockEnable(cmuClock_ADC0, true);
+
+  /*start with defaults */
+  ADC_Init(ADC0,&ADC_Defaults);
+
+  ADC_InitSingle(ADC0, &init);
+  ADC0->SINGLECTRLX = VINATT(12) | VREFATT(6);
+}
+
+int voltage2capacity(int mvolts) { // Discrete linear approximation
+	if (mvolts >= 3000){
+		return 100;
+	} else if (mvolts > 2900) {
+	    return 100 - ((3000 - mvolts) * 58) / 100;
+	} else if (mvolts > 2740){
+	    return 42 - ((2900 - mvolts) * 24) / 160;
+	} else if (mvolts > 2440){
+	    return 18 - ((2740 - mvolts) * 12) / 300;
+	} else if (mvolts > 2100){
+	    return 6 - ((2440 - mvolts) * 6) / 340;
+	} else {
+	    return 0;
+	}
+}
+
+void readSupplyVoltage()
+{
+   unsigned int raw=0;
+   unsigned int supplyVoltagemV=0;
+
+   //CMU_ClockEnable(cmuClock_ADC0, true);
+   ADC0->CMD = ADC_CMD_SINGLESTART;
+   /* wait for conversion to complete.*/
+
+   while (!(ADC0->STATUS & (ADC_STATUS_SINGLEDV | ADC_STATUS_SINGLEACT)));
+   raw = ADC0->SINGLEDATA;
+
+   //CMU_ClockEnable(cmuClock_ADC0, false);
+
+   supplyVoltagemV = raw*microvoltsPerStep/1000UL;
+
+   batteryVoltage = supplyVoltagemV;
+
+   batteryVoltagePct = voltage2capacity(supplyVoltagemV);
+
+}
 
 /***************************************************************************//**
  * @brief Unified GPIO Interrupt handler (pushbuttons)
@@ -284,7 +358,7 @@ static void drawScreen(void)
 
       int y_dog = 0;
 
-      if (love >= 0) {
+      if (love >= 0) { // Living Dog
     	for (int i_dog = 0; i_dog < DOG_BITMAP_HEIGHT; i_dog++){
     	  for (int j = 0; j < DOG_BITMAP_WIDTH*3/8; j++){
     		  if (dogBitmap[y_dog] < TRANSPARENT_LIM) { // Lazy mans alpha-blending (is byte-wise, should be 3bit, causes artifacts)
@@ -294,7 +368,7 @@ static void drawScreen(void)
     	  }
     	  y_fullscreen += SCREEN_WIDTH*3/8;
        }
-      } else {
+      } else { // Dead dog
       	for (int i_dog = 0; i_dog < DOG_DEAD_BITMAP_HEIGHT; i_dog++){
       	  for (int j = 0; j < DOG_DEAD_BITMAP_WIDTH*3/8; j++){
       		  if (dog_deadBitmap[y_dog] < TRANSPARENT_LIM) { // Lazy mans alpha-blending  (is byte-wise, should be 3bit, causes artifacts)
@@ -304,7 +378,6 @@ static void drawScreen(void)
       	  }
       	  y_fullscreen += SCREEN_WIDTH*3/8;
          }
-
       }
 
       // Draw background and "alpha-blended" dog
@@ -327,6 +400,7 @@ static void drawScreen(void)
 
       // Draw Clock
       sprintf(time_str, "%02d:%02d", time_h, time_m);
+      GLIB_setFont(&glibContext, &clk_font);
       GLIB_drawString(&glibContext,
     		          time_str,
 					  TIME_STR_LEN,
@@ -334,7 +408,35 @@ static void drawScreen(void)
 					  20,
 					  str_opaque);
 
+      sprintf(bat_str, "%3d%%", batteryVoltagePct);
+      GLIB_setFont(&glibContext, &bat_font);
+      GLIB_drawString(&glibContext,
+    		          bat_str,
+					  BAT_STR_LEN,
+					  0,
+					  5,
+					  false);
+
       DMD_updateDisplay();
+}
+
+void GraphicsInit()
+{
+	EMSTATUS status;
+
+	// Initialize the DMD module for the DISPLAY device driver.
+	status = DMD_init(0);
+	if (DMD_OK != status) {
+		while (1);
+	}
+
+	status = GLIB_contextInit(&glibContext);
+	if (GLIB_OK != status) {
+		while (1);
+	}
+
+	bat_font = GLIB_FontNarrow6x8;
+	clk_font = GLIB_FontNumber16x20;
 }
 
 static void setupLetimer(void)
@@ -377,9 +479,7 @@ int state_changed(void) {
  * @brief  Main function.
  ******************************************************************************/
 int main(void)
-
 {
-  EMSTATUS status;
 
   /* Chip errata */
   CHIP_Init();
@@ -388,32 +488,13 @@ int main(void)
   const CMU_LFXOInit_TypeDef *lfxo_init = CMU_LFXOINIT_DEFAULT;
   CMU_LFXOInit(lfxo_init);
 
-
-  //setupCryotimer();
-
   // Setup GPIO for pushbuttons.
   GpioSetup();
 
-  // Initialize the DMD module for the DISPLAY device driver.
-  status = DMD_init(0);
-  if (DMD_OK != status) {
-    while (1) {
-    }
-  }
+  GraphicsInit();
 
-  status = GLIB_contextInit(&glibContext);
-  if (GLIB_OK != status) {
-    while (1) {
-    }
-  }
-
-  GLIB_Font_t number_font = GLIB_FontNumber16x20;
-  status = GLIB_setFont(&glibContext, &number_font);
-  if (GLIB_OK != status) {
-    while (1) {
-
-   }
-  }
+  CMU_ClockEnable(cmuClock_ADC0, true);
+  InitADCforSupplyMeasurement();
 
   // Set initial time
   Time_Init();
@@ -421,7 +502,10 @@ int main(void)
   // Start time keeping
   setupLetimer();
 
+  RMU->CTRL = RMU_CTRL_PINRMODE_DISABLED; // Disable pin reset
   glibContext.foregroundColor = Black;
+
+  readSupplyVoltage();
 
   while (1) {
 	//if (state_changed()) {
@@ -441,6 +525,13 @@ int main(void)
     jump -= 3;
     drawScreen();
     state_changed();
+
+    CMU_ClockEnable(cmuClock_ADC0, true);
+    readSupplyVoltage();
+    CMU_ClockEnable(cmuClock_ADC0, false);
+
     EMU_EnterEM2(true);
+
+
   }
 }

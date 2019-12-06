@@ -124,11 +124,11 @@
 								<option id="com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.debug.builtin.1936798751" name="Always branch to builtin functions (-fno-builtin)" superClass="com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.debug.builtin" value="false" valueType="boolean"/>
 								<option id="com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.debug.prolog.1021377658" name="Generate debugger-friendly prologs (-mno-sched-prolog)" superClass="com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.debug.prolog" value="false" valueType="boolean"/>
 								<option id="gnu.c.compiler.option.include.paths.1406262326" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Novagotchi/emlib/inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Novagotchi/CMSIS/Include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Novagotchi/inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Novagotchi/Drivers/inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Novagotchi/CMSIS/EFM32TG11B/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/novagotchi/emlib/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/novagotchi/CMSIS/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/novagotchi/CMSIS/EFM32TG11B/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/novagotchi/Drivers/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/novagotchi/inc}&quot;"/>
 								</option>
 								<inputType id="com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.input.676919679" superClass="com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
