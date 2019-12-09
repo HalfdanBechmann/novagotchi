@@ -19,7 +19,6 @@
 #include "em_prs.h"
 #include "em_cryotimer.h"
 #include "em_adc.h"
-//#include "em_rtcc.h"
 
 // Configuration
 #include "pinout.h"
@@ -96,9 +95,8 @@ GLIB_Font_t clk_font;
 
 // State variables
 static volatile uint32_t pos = INIT_POS;
-static volatile uint32_t pos_prev = 0;
-static volatile uint32_t love = INIT_LOVE;
-static volatile uint32_t love_prev = INIT_LOVE;
+static volatile uint32_t pos_prev = INIT_POS;
+static volatile int love = INIT_LOVE;
 
 static char bat_str[BAT_STR_LEN+1];
 static int batteryVoltage;
@@ -175,7 +173,10 @@ void Time_Init() {
 		 EMU_EnterEM2(true);
 	 };
 	 love = INIT_LOVE;
+
+	 // Exit clock adjustment graphics
 	 str_opaque = false;
+	 glibContext.foregroundColor = Black;
 }
 
 void Time_MinuteTick() {
@@ -190,8 +191,6 @@ void Time_MinuteTick() {
 		}
 	}
 }
-
-
 
 // Health functions
 static volatile uint32_t love_buffer = 0;
@@ -226,7 +225,7 @@ void InitADCforSupplyMeasurement()
   init.posSel = adcPosSelAVDD;
   init.reference = adcRef5V ;
 
-  //CMU_ClockEnable(cmuClock_ADC0, true);
+  CMU_ClockEnable(cmuClock_ADC0, true);
 
   /*start with defaults */
   ADC_Init(ADC0,&ADC_Defaults);
@@ -235,7 +234,8 @@ void InitADCforSupplyMeasurement()
   ADC0->SINGLECTRLX = VINATT(12) | VREFATT(6);
 }
 
-int voltage2capacity(int mvolts) { // Discrete linear approximation
+int voltage2capacity(int mvolts) {
+	// Rough estimation of remaining capacity of coin cell battery
 	if (mvolts >= 3000){
 		return 100;
 	} else if (mvolts > 2900) {
@@ -256,14 +256,14 @@ void readSupplyVoltage()
    unsigned int raw=0;
    unsigned int supplyVoltagemV=0;
 
-   //CMU_ClockEnable(cmuClock_ADC0, true);
+   CMU_ClockEnable(cmuClock_ADC0, true);
+
    ADC0->CMD = ADC_CMD_SINGLESTART;
    /* wait for conversion to complete.*/
-
-   while (!(ADC0->STATUS & (ADC_STATUS_SINGLEDV | ADC_STATUS_SINGLEACT)));
+   while (!(ADC0->STATUS & ADC_STATUS_SINGLEDV));
    raw = ADC0->SINGLEDATA;
 
-   //CMU_ClockEnable(cmuClock_ADC0, false);
+   CMU_ClockEnable(cmuClock_ADC0, false);
 
    supplyVoltagemV = raw*microvoltsPerStep/1000UL;
 
@@ -306,13 +306,7 @@ void GPIO_Unified_IRQ(void)
   }
 
 }
-/*
-void RTCC_IRQHandler(void)
-{
-	uint32_t interruptMask = RTCC_IntGet();
-	RTCC_IntClear(interruptMask);
-}
-*/
+
 void LETIMER0_IRQHandler(void)
 {
 	uint32_t interruptMask = LETIMER_IntGet(LETIMER0);
@@ -343,41 +337,42 @@ void GPIO_ODD_IRQHandler(void)
 #define TRANSPARENT_LIM 0xfc
 #define SCREEN_WIDTH  LPM013M126A_WIDTH
 #define SCREEN_HEIGHT LPM013M126A_HEIGHT
+#define BITS_PER_PIXEL LPM013M126A_BITS_PER_PIXEL
 
 #define SCREEN_BYTE_WIDTH SCREEN_WIDTH*3/8
 #define HEART_BYTE_WIDTH HEART_BITMAP_WIDTH*3/8
 
 uint8_t fullScreenBitmap[FULLSCREEN_BMP_SIZE];
 
+
+// Lazy mans alpha-blending (is byte-wise, should be 3bit, causes artifacts)
+void alpha_blend (uint8_t background[FULLSCREEN_BMP_SIZE], const uint8_t *overlay,
+				  int overlay_xsize, int overlay_ysize,
+				  int overlay_xpos,  int overlay_ypos)
+{
+	int ovl_bytepos = 0;
+	int bg_bytepos = (overlay_ypos * SCREEN_BYTE_WIDTH) + BITS_PER_PIXEL*overlay_xpos;
+
+ 	for (int y = 0; y < overlay_ysize; y++){
+	  for (int x = 0; x < overlay_xsize*BITS_PER_PIXEL/8; x++){
+		  if (overlay[ovl_bytepos] < TRANSPARENT_LIM) {
+			  background[bg_bytepos+x] = overlay[ovl_bytepos];
+		  }
+		  ovl_bytepos++;
+	  }
+	  bg_bytepos += SCREEN_BYTE_WIDTH;
+    }
+}
+
+
 static void drawScreen(void)
 {
       memcpy(fullScreenBitmap, gardenBitmap, sizeof(gardenBitmap)/sizeof(uint8_t));
 
-      int y_fullscreen = 120*66;
-      y_fullscreen -= (SCREEN_WIDTH*3/8)*jump;
-
-      int y_dog = 0;
-
       if (love >= 0) { // Living Dog
-    	for (int i_dog = 0; i_dog < DOG_BITMAP_HEIGHT; i_dog++){
-    	  for (int j = 0; j < DOG_BITMAP_WIDTH*3/8; j++){
-    		  if (dogBitmap[y_dog] < TRANSPARENT_LIM) { // Lazy mans alpha-blending (is byte-wise, should be 3bit, causes artifacts)
-    			  fullScreenBitmap[y_fullscreen+j+3*pos] = dogBitmap[y_dog];
-    		  }
-    		  y_dog++;
-    	  }
-    	  y_fullscreen += SCREEN_WIDTH*3/8;
-       }
+    	alpha_blend(fullScreenBitmap, dogBitmap,      DOG_BITMAP_WIDTH, DOG_BITMAP_HEIGHT, pos, 120-jump);
       } else { // Dead dog
-      	for (int i_dog = 0; i_dog < DOG_DEAD_BITMAP_HEIGHT; i_dog++){
-      	  for (int j = 0; j < DOG_DEAD_BITMAP_WIDTH*3/8; j++){
-      		  if (dog_deadBitmap[y_dog] < TRANSPARENT_LIM) { // Lazy mans alpha-blending  (is byte-wise, should be 3bit, causes artifacts)
-      			  fullScreenBitmap[y_fullscreen+j] = dog_deadBitmap[y_dog];
-      		  }
-      		  y_dog++;
-      	  }
-      	  y_fullscreen += SCREEN_WIDTH*3/8;
-         }
+      	alpha_blend(fullScreenBitmap, dog_deadBitmap, DOG_BITMAP_WIDTH, DOG_BITMAP_HEIGHT, pos, 120);
       }
 
       // Draw background and "alpha-blended" dog
@@ -391,13 +386,12 @@ static void drawScreen(void)
       // Draw hearts
       for (int i = 0; i < love; i++) {
     	  GLIB_drawBitmap(&glibContext,
-    			          HEART_POS_X + (i*HEART_BITMAP_WIDTH),
-    	                  0,
-    	                  HEART_BITMAP_WIDTH,
-    	                  HEART_BITMAP_HEIGHT,
-						  heartBitmap);
+    			  HEART_POS_X + (i*HEART_BITMAP_WIDTH),
+				  0,
+				  HEART_BITMAP_WIDTH,
+				  HEART_BITMAP_HEIGHT,
+				  heartBitmap);
       }
-
       // Draw Clock
       sprintf(time_str, "%02d:%02d", time_h, time_m);
       GLIB_setFont(&glibContext, &clk_font);
@@ -452,27 +446,32 @@ static void setupLetimer(void)
 	letimerInit.comp0Top = true;
 	letimerInit.repMode = letimerRepeatFree;
 
-	LETIMER_Init(LETIMER0, &letimerInit );
+	LETIMER_Init(LETIMER0, &letimerInit);
 
 	LETIMER_CompareSet(LETIMER0, 0, 59); // Counts to 59 seconds
 
 	NVIC_ClearPendingIRQ(LETIMER0_IRQn);
-	NVIC_EnableIRQ(LETIMER0_IRQn);
 	LETIMER0->IFC = ~_LETIMER_IFC_MASK;
 	LETIMER0->IEN = LETIMER_IEN_COMP0;
+	NVIC_EnableIRQ(LETIMER0_IRQn);
 
 	LETIMER_Enable(LETIMER0, true);
 }
 
-int state_changed(void) {
-	if ((pos  != pos_prev) ||
-	    (love != love_prev)) {
-		pos_prev  = pos;
-		love_prev = love;
-		return 1;
-	} else {
-		return 0;
-	}
+void animate_jump()
+{
+	int new_pos = pos;
+	pos = pos_prev;
+	jump = 3;
+    drawScreen();
+    jump += 2;
+    pos = new_pos;
+    drawScreen();
+    jump -= 2;
+    drawScreen();
+    jump = 0;
+    drawScreen();
+    pos_prev = pos;
 }
 
 /***************************************************************************//**
@@ -488,50 +487,26 @@ int main(void)
   const CMU_LFXOInit_TypeDef *lfxo_init = CMU_LFXOINIT_DEFAULT;
   CMU_LFXOInit(lfxo_init);
 
-  // Setup GPIO for pushbuttons.
-  GpioSetup();
+  GpioSetup();  // Setup GPIO for pushbuttons
 
   GraphicsInit();
 
-  CMU_ClockEnable(cmuClock_ADC0, true);
   InitADCforSupplyMeasurement();
 
-  // Set initial time
-  Time_Init();
 
-  // Start time keeping
-  setupLetimer();
+  Time_Init(); // Allow user to set initial time
+  setupLetimer(); // Start time keeping
 
-  RMU->CTRL = RMU_CTRL_PINRMODE_DISABLED; // Disable pin reset
-  glibContext.foregroundColor = Black;
+  RMU->CTRL = RMU_CTRL_PINRMODE_DISABLED; // Disable pin reset to avoid accidental resets
 
-  readSupplyVoltage();
 
   while (1) {
-	//if (state_changed()) {
-    //drawScreen();
-	//}
-	// Fixme: Needs cleanup
-	int new_pos = pos;
-	pos = pos_prev;
-	jump = (time_m % 3) + 3;
-    drawScreen();
-    jump += 2;
-    pos = new_pos;
-    drawScreen();
-    jump -= 2;
-    removeLove();
-    drawScreen();
-    jump -= 3;
-    drawScreen();
-    state_changed();
 
-    CMU_ClockEnable(cmuClock_ADC0, true);
+	animate_jump();
     readSupplyVoltage();
-    CMU_ClockEnable(cmuClock_ADC0, false);
+    removeLove();
 
     EMU_EnterEM2(true);
-
 
   }
 }
