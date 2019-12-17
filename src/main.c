@@ -372,7 +372,7 @@ static void drawScreen(void)
       if (love >= 0) { // Living Dog
     	alpha_blend(fullScreenBitmap, dogBitmap,      DOG_BITMAP_WIDTH, DOG_BITMAP_HEIGHT, pos, 120-jump);
       } else { // Dead dog
-      	alpha_blend(fullScreenBitmap, dog_deadBitmap, DOG_BITMAP_WIDTH, DOG_BITMAP_HEIGHT, pos, 120);
+      	alpha_blend(fullScreenBitmap, dog_deadBitmap, DOG_DEAD_BITMAP_WIDTH, DOG_DEAD_BITMAP_HEIGHT, pos, 120);
       }
 
       // Draw background and "alpha-blended" dog
